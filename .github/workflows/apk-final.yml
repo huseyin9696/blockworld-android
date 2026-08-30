@@ -23,18 +23,18 @@ jobs:
         with:
           gradle-version: "8.13"
 
-      - run: unzip -o BlockWorld_Android_RC_0.2.zip
+      - run: unzip -o BlockWorld_Android_0.3_AdminGratis.zip
 
       - name: BuildConfig Fehler reparieren
         run: |
-          sed -i 's/BuildConfig.DEBUG/false/g' BlockWorld_Android_RC_0.2/app/src/main/java/com/blockworld/game/MainActivity.java
-          sed -i 's/BuildConfig.VERSION_NAME/"0.2.0-rc1"/g' BlockWorld_Android_RC_0.2/app/src/main/java/com/blockworld/game/MainActivity.java
+          sed -i 's/BuildConfig.DEBUG/false/g' BlockWorld_Android_0.3_AdminGratis/app/src/main/java/com/blockworld/game/MainActivity.java
+          sed -i 's/BuildConfig.VERSION_NAME/"0.3.0-adminfree-debug"/g' BlockWorld_Android_0.3_AdminGratis/app/src/main/java/com/blockworld/game/MainActivity.java
 
       - run: gradle --no-daemon assembleDebug
-        working-directory: BlockWorld_Android_RC_0.2
+        working-directory: BlockWorld_Android_0.3_AdminGratis
 
       - uses: actions/upload-artifact@v4
         with:
           name: BlockWorld-APK
-          path: BlockWorld_Android_RC_0.2/app/build/outputs/apk/debug/*.apk
+          path: BlockWorld_Android_0.3_AdminGratis/app/build/outputs/apk/debug/*.apk
           
