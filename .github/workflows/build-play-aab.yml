@@ -1,0 +1,58 @@
+name: PLAY AAB
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: android-actions/setup-android@v3
+
+      - run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.13"
+
+      - name: Extract Play-ready project
+        run: unzip -o BlockWorld_Android_0.3_PlayReady.zip
+
+      - name: Check signing secrets
+        env:
+          KEYSTORE_B64: ${{ secrets.BLOCKWORLD_UPLOAD_KEYSTORE_B64 }}
+          STORE_PASSWORD: ${{ secrets.BLOCKWORLD_STORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.BLOCKWORLD_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.BLOCKWORLD_KEY_PASSWORD }}
+        run: |
+          test -n "$KEYSTORE_B64" || (echo "Missing BLOCKWORLD_UPLOAD_KEYSTORE_B64" && exit 1)
+          test -n "$STORE_PASSWORD" || (echo "Missing BLOCKWORLD_STORE_PASSWORD" && exit 1)
+          test -n "$KEY_ALIAS" || (echo "Missing BLOCKWORLD_KEY_ALIAS" && exit 1)
+          test -n "$KEY_PASSWORD" || (echo "Missing BLOCKWORLD_KEY_PASSWORD" && exit 1)
+
+      - name: Restore upload key
+        env:
+          KEYSTORE_B64: ${{ secrets.BLOCKWORLD_UPLOAD_KEYSTORE_B64 }}
+        run: echo "$KEYSTORE_B64" | base64 --decode > "$GITHUB_WORKSPACE/BlockWorld_Android_0.3_PlayReady/blockworld-upload.jks"
+
+      - name: Build signed AAB
+        working-directory: BlockWorld_Android_0.3_PlayReady
+        env:
+          BLOCKWORLD_STORE_FILE: ${{ github.workspace }}/BlockWorld_Android_0.3_PlayReady/blockworld-upload.jks
+          BLOCKWORLD_STORE_PASSWORD: ${{ secrets.BLOCKWORLD_STORE_PASSWORD }}
+          BLOCKWORLD_KEY_ALIAS: ${{ secrets.BLOCKWORLD_KEY_ALIAS }}
+          BLOCKWORLD_KEY_PASSWORD: ${{ secrets.BLOCKWORLD_KEY_PASSWORD }}
+        run: gradle --no-daemon bundleRelease
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: BlockWorld-Play-AAB
+          path: BlockWorld_Android_0.3_PlayReady/app/build/outputs/bundle/release/*.aab
